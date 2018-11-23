@@ -1,58 +1,57 @@
 package com.example.dell.proyectoedii;
 
-import android.app.ProgressDialog;
 import android.content.Intent;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.TextView;
+import android.widget.Toast;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.net.URLConnection;
+import com.example.dell.proyectoedii.Retrofit.retrofitClient;
+import com.example.dell.proyectoedii.Retrofit.retrofitService;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.functions.Consumer;
+import io.reactivex.schedulers.Schedulers;
+import retrofit2.Retrofit;
 
 public class MainActivity extends AppCompatActivity {
 
-    @BindView(R.id.txtUser)
-    EditText txtUser;
     @BindView(R.id.btnLogin)
     Button btnLogin;
-    public static final String userName = "userName";
     @BindView(R.id.txtEmail)
     EditText txtEmail;
     @BindView(R.id.txtPassword)
     EditText txtPassword;
-    @BindView(R.id.textView)
-    TextView textView;
+    @BindView(R.id.btnRegister)
+    Button btnRegister;
+
+    retrofitService iretrofitService;
+    CompositeDisposable compositedisposable = new CompositeDisposable();
+
+    @Override
+    protected void onStop(){
+        compositedisposable.clear();
+        super.onStop();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
+
+        //Init service
+        Retrofit retrofitCliente = retrofitClient.getInstance();
+        iretrofitService = retrofitCliente.create(retrofitService.class);
     }
 
     @OnClick(R.id.btnLogin)
-    public void onViewClicked() {
-        //if login is not empty go to chatbox activity and add the nickname to the intent extra
-
+    public void onViewClickedLogin() {
         /*if (!txtUser.getText().toString().isEmpty()) {
             Intent intent = new Intent(MainActivity.this, chatActivity.class);
             //send userName to chat
@@ -60,12 +59,45 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
         }*/
         //make GET request
-        new GetDataTask().execute("http://192.168.1.5:3000/api/users");
+
+
         //make POST request
         //new PostDataTask().execute("http://192.168.1.5:3000/api/users");
+        login(txtEmail.getText().toString(), txtPassword.getText().toString());
     }
 
-    class GetDataTask extends AsyncTask<String, Void, String>
+    @OnClick(R.id.btnRegister)
+    public void onViewClickedRegister() {
+        Intent intent = new Intent(MainActivity.this, registerActivity.class);
+        //send userName to chat
+        //intent.putExtra(userName, txtUser.getText().toString());
+        startActivity(intent);
+    }
+
+    private void login(String email, String password){
+        if(txtEmail.getText().toString().isEmpty()){
+            Toast.makeText(this, "Ingrese email", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if(txtPassword.getText().toString().isEmpty()){
+            Toast.makeText(this, "Ingrese contraseña", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        compositedisposable.add(iretrofitService.loginUser(email, password)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new Consumer<String>() {
+                    @Override
+                    public void accept(String response) throws Exception {
+                        Toast.makeText(MainActivity.this, ""+response, Toast.LENGTH_SHORT).show();
+                    }
+
+                }));
+
+    }
+
+    /*class GetDataTask extends AsyncTask<String, Void, String>
     {
         ProgressDialog progressDialog;
         @Override
@@ -106,7 +138,7 @@ public class MainActivity extends AppCompatActivity {
             try {
                 URL url = new URL(urlPath);
                 HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
-                urlConnection.setReadTimeout(10000 /*milliseconds*/);
+                urlConnection.setReadTimeout(10000);
                 urlConnection.setConnectTimeout(10000);
                 urlConnection.setRequestMethod("GET");
                 urlConnection.setRequestProperty("Content-Type", "application/json"); //header
@@ -131,25 +163,14 @@ public class MainActivity extends AppCompatActivity {
     class PostDataTask extends AsyncTask<String, Void, String>{
         ProgressDialog progressDialog;
 
-        @Override
+        /*@Override
         protected void onPreExecute() {
             super.onPreExecute();
             progressDialog = new ProgressDialog(MainActivity.this);
             progressDialog.setMessage("inserting ");
             progressDialog.show();
-        }
-
-        @Override
-        protected String doInBackground(String... params) {
-            try{
-                return postData(params[0]);
-            } catch(IOException e){
-                return "Network error";
-            }catch(JSONException e){
-                return "Invalid data";
-            }
-        }
-
+        }*/
+/*
         @Override
         protected void onPostExecute(String result) {
             super.onPostExecute(result);
@@ -159,42 +180,7 @@ public class MainActivity extends AppCompatActivity {
                 progressDialog.dismiss();
             }
 
-        }
-
-        private String postData(String urlPath) throws IOException, JSONException{
-            BufferedWriter bufferedWriter = null;
-            try {
-
-                JSONObject dataToSend = new JSONObject();
-
-                dataToSend.put("email", txtEmail.getText().toString());
-                dataToSend.put("userName", txtUser.getText().toString());
-                dataToSend.put("password", txtPassword.getText().toString());
-
-                //initialize server
-                URL url = new URL(urlPath);
-                HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
-                urlConnection.setReadTimeout(10000 /*milliseconds*/);
-                urlConnection.setConnectTimeout(10000);
-                urlConnection.setRequestMethod("POST");
-                urlConnection.setDoOutput(true); //enable output
-                urlConnection.setRequestProperty("Content-Type", "application/json"); //header
-                urlConnection.connect();
-
-                //Write data into server
-                OutputStream outputStream = urlConnection.getOutputStream();
-                bufferedWriter = new BufferedWriter(new OutputStreamWriter(outputStream));
-                bufferedWriter.write(dataToSend.toString());
-                bufferedWriter.flush();
-            } finally {
-                if(bufferedWriter != null){
-                    bufferedWriter.close();
-                }
-            }
-
-            return "";
-        }
-    }
+        }*/
 
 
 }

@@ -40,7 +40,7 @@ public class chatActivity extends AppCompatActivity {
         messagetxt = (EditText) findViewById(R.id.message);
         send = (Button) findViewById(R.id.btnSend);
         // get the nickame of the user
-        Nickname = (String) getIntent().getExtras().getString(MainActivity.userName);
+        //Nickname = (String) getIntent().getExtras().getString(MainActivity.userName);
         //connect you socket client to the server
 
         //setting up recyler
