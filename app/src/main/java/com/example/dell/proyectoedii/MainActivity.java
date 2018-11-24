@@ -30,6 +30,8 @@ public class MainActivity extends AppCompatActivity {
     @BindView(R.id.btnRegister)
     Button btnRegister;
 
+    final String user = "";
+
     retrofitService iretrofitService;
     CompositeDisposable compositedisposable = new CompositeDisposable();
 
@@ -59,7 +61,6 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
         }*/
         //make GET request
-
 
         //make POST request
         //new PostDataTask().execute("http://192.168.1.5:3000/api/users");
@@ -91,6 +92,12 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void accept(String response) throws Exception {
                         Toast.makeText(MainActivity.this, ""+response, Toast.LENGTH_SHORT).show();
+                        if(response.equals("Login success")){
+                            Intent intent = new Intent(MainActivity.this, chatActivity.class);
+                            //send userName to chat
+                            intent.putExtra(user, txtEmail.getText().toString());
+                            startActivity(intent);
+                        }
                     }
 
                 }));
@@ -160,25 +167,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    class PostDataTask extends AsyncTask<String, Void, String>{
-        ProgressDialog progressDialog;
-
-        /*@Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-            progressDialog = new ProgressDialog(MainActivity.this);
-            progressDialog.setMessage("inserting ");
-            progressDialog.show();
-        }*/
-/*
-        @Override
-        protected void onPostExecute(String result) {
-            super.onPostExecute(result);
-            textView.setText(result);
-
-            if(progressDialog != null){
-                progressDialog.dismiss();
-            }
 
         }*/
 
